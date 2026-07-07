@@ -23,7 +23,11 @@ def main():
     api = Garmin(
         email=email,
         password=password,
-        prompt_mfa=lambda: input("MFA code (if prompted by Garmin): ").strip(),
+        prompt_mfa=lambda: input(
+            "Garmin just sent a code to your account email (or authenticator "
+            "app).\nCheck it NOW and type the code here (do not press Enter "
+            "without a code): "
+        ).strip(),
     )
     api.login(tokenstore)
     print(f"\nLogin OK. Tokens saved to {tokenstore}")
