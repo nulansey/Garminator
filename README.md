@@ -1,7 +1,7 @@
 # Garmin Health Tips
 
 Sends me three short, personalized health tips a day (morning / midday /
-evening) as iPhone notifications via [ntfy](https://ntfy.sh), written by Claude
+evening) as iPhone notifications via [ntfy](https://ntfy.sh), written by Gemini
 from **patterns** in my Garmin watch data. The 7am briefing includes a calorie
 target based on my typical burn for that day of the week.
 
@@ -13,7 +13,7 @@ target based on my typical burn for that day of the week.
   the updated store. Garmin credentials never leave my Mac.
 - GitHub Actions runs three times a day, computes exponentially weighted
   weekday statistics (all history counts; recent weeks count more — see
-  `half_life_days` in `config.yaml`), has Claude Haiku write a tip, and sends
+  `half_life_days` in `config.yaml`), has Gemini write a tip, and sends
   it via ntfy.
 - If the data grows older than `stale_after_days`, the morning run sends a
   "time for a fetch" nudge instead of a tip.
@@ -23,14 +23,14 @@ target based on my typical burn for that day of the week.
 1. **ntfy** — install the free ntfy app on your iPhone and subscribe to a
    hard-to-guess topic name. Treat the name like a password — anyone who knows
    it can send you notifications and read the tips.
-2. **Claude API key** — create one at https://console.anthropic.com (requires a
-   payment card; expected usage is under $1/month).
+2. **Gemini API key** — create a free one at https://aistudio.google.com/apikey
+   (no payment card needed; free tier easily covers three tips a day).
 3. **Garmin auth** — run `.venv/bin/python -m src.setup_auth` in Terminal
    (interactive: password + emailed code). Tokens last about a year.
 4. **First fetch** — run `.venv/bin/python -m src.fetch` (backfills 90 days).
 5. **GitHub** — push this repo to a **private** GitHub repository and add two
    Actions secrets (Settings → Secrets and variables → Actions):
-   - `ANTHROPIC_API_KEY` — from step 2
+   - `GEMINI_API_KEY` — from step 2
    - `NTFY_TOPIC` — your topic name from step 1
 6. Trigger the **Health tips** workflow manually from the Actions tab to test.
 

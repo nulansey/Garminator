@@ -1,9 +1,10 @@
-"""Build the prompt and ask Claude Haiku for one health tip."""
+"""Build the prompt and ask Gemini for one health tip."""
 import json
 
-import anthropic
+from google import genai
+from google.genai import types
 
-MODEL = "claude-haiku-4-5"
+MODEL = "gemini-2.5-flash"
 
 SLOT_GUIDANCE = {
     "morning": (
@@ -54,14 +55,19 @@ def build_prompt(context, history, slot, config, calorie_target_value=None):
 
 
 def generate_tip(context, history, slot, config, calorie_target_value=None):
-    client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
+    client = genai.Client()  # reads GEMINI_API_KEY from the environment
     prompt = build_prompt(context, history, slot, config, calorie_target_value)
-    response = client.messages.create(
+    response = client.models.generate_content(
         model=MODEL,
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}],
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            max_output_tokens=500,
+            # Disable "thinking" so the whole output budget goes to the tip, not
+            # to reasoning tokens (which otherwise can leave response.text empty).
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
-    text = next((b.text for b in response.content if b.type == "text"), "").strip()
+    text = (response.text or "").strip()
     if not text:
-        raise RuntimeError("Claude returned an empty tip")
+        raise RuntimeError("Gemini returned an empty tip")
     return text

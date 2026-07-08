@@ -16,7 +16,7 @@ All commands run from the repo root (`~/garmin-health-tips`).
 3. Commit and push so the scheduled GitHub runs see the fresh data:
    `git add data/daily.json && git commit -m "Update Garmin data through <newest date>" && git push`
 4. Optionally sanity-check tips: `.venv/bin/python -m src.main --dry-run --slot morning`
-   (needs `ANTHROPIC_API_KEY` in the environment).
+   (needs `GEMINI_API_KEY` in the environment).
 
 ## Troubleshooting
 
