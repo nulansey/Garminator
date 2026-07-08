@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from src import analyze, garmin, notify
+from src import analyze, fetch, notify, patterns
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config.yaml"
@@ -73,31 +73,50 @@ TITLES = {
 def run(args):
     config = load_config()
     now = datetime.now(ZoneInfo(config["timezone"]))
-    today = now.date().isoformat()
+    today = now.date()
+    today_iso = today.isoformat()
     slot = args.slot or determine_slot(now.hour)
 
     history = load_history()
-    if not args.dry_run and already_sent(history, today, slot):
+    if not args.dry_run and already_sent(history, today_iso, slot):
         print(f"{slot} tip already sent today; exiting.")
         return
 
-    data = garmin.fetch_data(now.date())
-    target, fallback = None, False
+    store = fetch.load_store()
+    age = patterns.data_age_days(store, today)
+    if age is None or age > config.get("stale_after_days", 10):
+        nudge = (
+            "No Garmin data in the store yet - ask Claude to run /fetch-garmin."
+            if age is None
+            else f"Newest Garmin data is {age} days old - ask Claude to run "
+                 "/fetch-garmin so tips stay accurate."
+        )
+        if args.dry_run:
+            print(f"[{slot}] STALE DATA: {nudge}")
+        elif slot == "morning":  # nudge once a day, not three times
+            notify.send(nudge, title="Time for a Garmin fetch", tags="hourglass")
+            save_history(append_tip(history, today_iso, slot, "[stale-data nudge]",
+                                    config.get("history_days", 14)))
+        else:
+            print("data stale; skipping non-morning slot")
+        return
+
+    half_life = config.get("half_life_days", 45)
+    context = patterns.pattern_summary(store, today, half_life)
+    target = None
     if slot == "morning":
-        burn, fallback = garmin.yesterday_burn(data)
+        burn = patterns.target_burn(store, today, half_life)
         target = calorie_target(burn, config["goal"]["type"], config["goal"]["amount"])
 
-    tip = analyze.generate_tip(
-        data, history, slot, config,
-        calorie_target_value=target, fallback_used=fallback,
-    )
+    tip = analyze.generate_tip(context, history, slot, config,
+                               calorie_target_value=target)
 
     if args.dry_run:
         print(f"[{slot}] {tip}")
         return
 
     notify.send(tip, title=TITLES[slot])
-    save_history(append_tip(history, today, slot, tip,
+    save_history(append_tip(history, today_iso, slot, tip,
                             config.get("history_days", 14)))
     print(f"Sent {slot} tip.")
 

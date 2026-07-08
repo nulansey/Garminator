@@ -4,16 +4,17 @@ CONFIG = {"tone": "friendly"}
 
 
 def test_morning_prompt_leads_with_calorie_target():
-    p = build_prompt({"today": "2026-07-06"}, [], "morning", CONFIG,
-                     calorie_target_value=2150)
+    context = {"today": "2026-07-07", "today_weekday": "Tuesday"}
+    p = build_prompt(context, [], "morning", CONFIG, calorie_target_value=2150)
     assert "~2,150 calories" in p
     assert "MORNING BRIEFING" in p
+    assert "typical burn" in p
 
 
-def test_morning_prompt_mentions_fallback_when_data_was_missing():
-    p = build_prompt({}, [], "morning", CONFIG,
-                     calorie_target_value=2150, fallback_used=True)
-    assert "7-day average" in p
+def test_prompt_explains_predictive_framing():
+    p = build_prompt({"today_weekday": "Tuesday"}, [], "midday", CONFIG)
+    assert "weighted" in p
+    assert "Tuesday" in p
 
 
 def test_prompt_includes_recent_tips_and_tone():
@@ -23,6 +24,7 @@ def test_prompt_includes_recent_tips_and_tone():
     assert "friendly" in p
 
 
-def test_prompt_includes_garmin_data():
-    p = build_prompt({"last_night_sleep": {"sleepScore": 82}}, [], "evening", CONFIG)
-    assert "sleepScore" in p
+def test_prompt_includes_pattern_data():
+    context = {"weekday_averages_weighted": {"Tuesday": {"totalSteps": 4100.0}}}
+    p = build_prompt(context, [], "evening", CONFIG)
+    assert "4100" in p

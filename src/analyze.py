@@ -8,26 +8,34 @@ MODEL = "claude-haiku-4-5"
 SLOT_GUIDANCE = {
     "morning": (
         "This is the MORNING BRIEFING. Lead with the calorie target line exactly "
-        "as provided, then 2-3 short sentences on recovery (sleep, HRV, Body "
-        "Battery) and how to approach the day."
+        "as provided (it is based on their typical burn for this weekday), then "
+        "2-3 short sentences setting up the day using what this weekday usually "
+        "looks like for them."
     ),
     "midday": (
-        "This is a MIDDAY tip. Look at today's activity, steps, and stress so far "
-        "and give ONE actionable suggestion for the afternoon."
+        "This is a MIDDAY tip. Based on what their afternoons usually look like "
+        "on this weekday (steps, stress, activities), give ONE actionable "
+        "suggestion for the rest of the day."
     ),
     "evening": (
-        "This is an EVENING tip. Focus on winding down: today's totals, stress, "
-        "and one concrete bedtime or recovery suggestion."
+        "This is an EVENING tip. Focus on winding down: their typical sleep on "
+        "this weekday, recent sleep trend, and one concrete bedtime or recovery "
+        "suggestion."
     ),
 }
 
 
-def build_prompt(data, history, slot, config, calorie_target_value=None,
-                 fallback_used=False):
+def build_prompt(context, history, slot, config, calorie_target_value=None):
     recent = [f"[{t['date']} {t['slot']}] {t['text']}" for t in history[-10:]]
     parts = [
-        "You write short health tips for one person based on their Garmin watch "
-        f"data. Tone: {config['tone']}.",
+        "You write short predictive health tips for one person based on "
+        f"patterns in their Garmin watch data. Tone: {config['tone']}.",
+        "The data below contains weighted per-weekday averages (recent weeks "
+        "count more than old ones; 'n' is how many of that weekday are on "
+        "record), the last 14 raw days, and their last few same-weekdays. "
+        f"Today is a {context.get('today_weekday', 'day')}: lean on that "
+        "weekday's patterns, but use the recent raw days to spot trends, "
+        "streaks, holidays, or habit changes the averages hide.",
         SLOT_GUIDANCE[slot],
         "Keep it under 500 characters total - it is sent as a phone notification. "
         "Plain text only: no markdown, no preamble, no sign-off.",
@@ -35,25 +43,19 @@ def build_prompt(data, history, slot, config, calorie_target_value=None,
         "relevant.",
     ]
     if calorie_target_value is not None:
-        line = f'Start with exactly: "Aim for ~{calorie_target_value:,} calories today."'
-        if fallback_used:
-            line += (
-                " Then note the target is based on their 7-day average burn "
-                "because yesterday's data was incomplete."
-            )
-        parts.append(line)
+        parts.append(
+            f'Start with exactly: "Aim for ~{calorie_target_value:,} calories today."'
+        )
     parts.append(
         "Recent tips already sent:\n" + ("\n".join(recent) if recent else "(none)")
     )
-    parts.append("Garmin data (JSON):\n" + json.dumps(data, default=str))
+    parts.append("Garmin pattern data (JSON):\n" + json.dumps(context, default=str))
     return "\n\n".join(parts)
 
 
-def generate_tip(data, history, slot, config, calorie_target_value=None,
-                 fallback_used=False):
+def generate_tip(context, history, slot, config, calorie_target_value=None):
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
-    prompt = build_prompt(data, history, slot, config, calorie_target_value,
-                          fallback_used)
+    prompt = build_prompt(context, history, slot, config, calorie_target_value)
     response = client.messages.create(
         model=MODEL,
         max_tokens=300,
