@@ -4,7 +4,7 @@ import json
 from google import genai
 from google.genai import types
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-flash-latest"
 
 SLOT_GUIDANCE = {
     "morning": (
