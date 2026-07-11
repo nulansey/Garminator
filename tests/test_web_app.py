@@ -56,3 +56,16 @@ def test_calorie_save_valid(monkeypatch, tmp_path):
     assert resp.status_code == 303
     assert "ok=1" in resp.headers["location"]
     assert calls and calls[0].startswith("config:")
+
+
+def test_timing_save_rejects_all_disabled(monkeypatch):
+    import web.app as webapp
+    monkeypatch.setattr(webapp.gitsync, "commit_and_push",
+                        lambda *a, **k: (True, "pushed"))
+    client = TestClient(app)
+    resp = client.post("/goals/timing",
+                       data={"morning_hour": "7", "midday_hour": "13",
+                             "evening_hour": "20"},  # no *_enabled boxes checked
+                       follow_redirects=False)
+    assert resp.status_code == 303
+    assert "ok=0" in resp.headers["location"]

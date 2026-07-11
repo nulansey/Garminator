@@ -15,8 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from src.fetch import load_store
-from src.main import load_config, load_history
-from web import gitsync, goals
+from src.main import get_slots, load_config, load_history
+from web import gitsync, goals, schedule
 from web.dashboard import build_dashboard
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,8 +76,10 @@ def _save_and_sync(write, description):
 
 @app.get("/goals")
 def goals_page(request: Request):
+    config = load_config()
     return templates.TemplateResponse(request, "goals.html",
-                                      {"config": load_config(),
+                                      {"config": config,
+                                       "slots": get_slots(config),
                                        "flash": _flash(request)})
 
 
@@ -107,3 +109,26 @@ def save_targets(sleep_hours: str = Form(""), steps: str = Form("")):
 def refresh():
     ok, detail = gitsync.pull()
     return _redirect("/", ok, "Pulled latest from GitHub." if ok else detail)
+
+
+@app.post("/goals/timing")
+async def save_timing(request: Request):
+    form = await request.form()
+    slots = {}
+    for name in ("morning", "midday", "evening"):
+        try:
+            hour = int(form.get(f"{name}_hour", ""))
+        except ValueError:
+            hour = -1  # fails validation below
+        slots[name] = {"enabled": f"{name}_enabled" in form, "hour": hour}
+    errors = schedule.validate_slots(slots)
+    if errors:
+        return _redirect("/goals", False, "; ".join(errors))
+    config = load_config()
+
+    def write():
+        schedule.set_slots(slots, path=schedule.CONFIG_PATH)
+        schedule.rewrite_workflow(slots, config["timezone"],
+                                  path=schedule.WORKFLOW_PATH)
+
+    return _save_and_sync(write, "update tip timing")

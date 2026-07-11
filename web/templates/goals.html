@@ -28,4 +28,19 @@
          value="{{ config.get('targets', {}).get('steps', '') }}">
   <button type="submit">Save targets</button>
 </form>
+
+<form method="post" action="/goals/timing">
+  <h2>Tip timing</h2>
+  {% for name in ["morning", "midday", "evening"] %}
+  <label>
+    <input type="checkbox" name="{{ name }}_enabled" style="width:auto"
+           {{ 'checked' if slots[name].enabled }}> {{ name }} at
+    <input type="number" name="{{ name }}_hour" min="0" max="23"
+           value="{{ slots[name].hour }}" style="width:70px"> :00
+  </label>
+  {% endfor %}
+  <p class="meta">Hours are local ({{ config.timezone }}). Changes rewrite the
+     GitHub schedule.</p>
+  <button type="submit">Save timing</button>
+</form>
 {% endblock %}
