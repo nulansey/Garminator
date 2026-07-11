@@ -28,3 +28,17 @@ def test_prompt_includes_pattern_data():
     context = {"weekday_averages_weighted": {"Tuesday": {"totalSteps": 4100.0}}}
     p = build_prompt(context, [], "evening", CONFIG)
     assert "4100" in p
+
+
+def test_build_prompt_includes_targets():
+    config = {"tone": "friendly",
+              "targets": {"sleep_hours": 7.5, "steps": 10000}}
+    prompt = build_prompt({"today_weekday": "Tuesday"}, [], "evening", config)
+    assert "7.5" in prompt and "10,000" in prompt
+    assert "target" in prompt.lower()
+
+
+def test_build_prompt_without_targets_unchanged():
+    config = {"tone": "friendly"}
+    prompt = build_prompt({"today_weekday": "Tuesday"}, [], "evening", config)
+    assert "sleep target" not in prompt.lower()

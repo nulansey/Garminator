@@ -43,6 +43,17 @@ def build_prompt(context, history, slot, config, calorie_target_value=None):
         "Do not repeat recent tips; build on what was said earlier today when "
         "relevant.",
     ]
+    targets = config.get("targets") or {}
+    target_bits = []
+    if targets.get("sleep_hours"):
+        target_bits.append(f"a nightly sleep target of {targets['sleep_hours']} hours")
+    if targets.get("steps"):
+        target_bits.append(f"a daily step target of {targets['steps']:,} steps")
+    if target_bits:
+        parts.insert(3, "The user has set " + " and ".join(target_bits) +
+                        ". When their patterns fall short of a target, nudge "
+                        "them toward it with something concrete; when they hit "
+                        "it, acknowledge it briefly.")
     if calorie_target_value is not None:
         parts.append(
             f'Start with exactly: "Aim for ~{calorie_target_value:,} calories today."'
