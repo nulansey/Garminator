@@ -69,3 +69,41 @@ def test_timing_save_rejects_all_disabled(monkeypatch):
                        follow_redirects=False)
     assert resp.status_code == 303
     assert "ok=0" in resp.headers["location"]
+
+
+def test_chat_page_renders():
+    client = TestClient(app)
+    resp = client.get("/chat")
+    assert resp.status_code == 200
+    assert "Send" in resp.text
+
+
+def test_chat_send_streams_and_persists(monkeypatch, tmp_path):
+    import web.app as webapp
+    import web.chat as chat_mod
+    chat_file = tmp_path / "chat.json"
+    monkeypatch.setattr(chat_mod, "CHAT_PATH", chat_file)
+    monkeypatch.setattr(chat_mod, "stream_reply",
+                        lambda prompt: iter(["Hello ", "there"]))
+    client = TestClient(app)
+    resp = client.post("/chat/send", json={"message": "hi coach"})
+    assert resp.status_code == 200
+    assert resp.text == "Hello there"
+    saved = chat_mod.load_chat(chat_file)
+    assert saved[-2]["role"] == "user" and saved[-2]["text"] == "hi coach"
+    assert saved[-1]["role"] == "coach" and saved[-1]["text"] == "Hello there"
+
+
+def test_chat_send_gemini_error(monkeypatch, tmp_path):
+    import web.chat as chat_mod
+    monkeypatch.setattr(chat_mod, "CHAT_PATH", tmp_path / "chat.json")
+
+    def boom(prompt):
+        raise RuntimeError("Gemini exploded")
+        yield  # pragma: no cover — makes this a generator
+
+    monkeypatch.setattr(chat_mod, "stream_reply", boom)
+    client = TestClient(app)
+    resp = client.post("/chat/send", json={"message": "hi"})
+    assert resp.status_code == 200
+    assert "trouble" in resp.text.lower()  # friendly error, not a stack trace

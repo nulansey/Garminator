@@ -10,13 +10,15 @@ from urllib.parse import quote
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
+from src import patterns
 from src.fetch import load_store
-from src.main import get_slots, load_config, load_history
-from web import gitsync, goals, schedule
+from src.main import calorie_target, get_slots, load_config, load_history
+from web import chat, gitsync, goals, schedule
 from web.dashboard import build_dashboard
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -132,3 +134,60 @@ async def save_timing(request: Request):
                                   path=schedule.WORKFLOW_PATH)
 
     return _save_and_sync(write, "update tip timing")
+
+
+class ChatMessage(BaseModel):
+    message: str
+
+
+@app.get("/chat")
+def chat_page(request: Request):
+    return templates.TemplateResponse(request, "chat.html",
+                                      {"history": chat.load_chat(chat.CHAT_PATH),
+                                       "flash": None})
+
+
+@app.post("/chat/send")
+def chat_send(body: ChatMessage):
+    config = load_config()
+    now = datetime.now(ZoneInfo(config["timezone"]))
+    store = load_store()
+    half_life = config.get("half_life_days", 45)
+    context = (patterns.pattern_summary(store, now.date(), half_life)
+               if store else {"note": "no Garmin data in the store yet"})
+    target = None
+    if store:
+        try:
+            burn = patterns.target_burn(store, now.date(), half_life)
+            target = calorie_target(burn, config["goal"]["type"],
+                                    config["goal"]["amount"])
+        except RuntimeError:
+            pass
+    prompt = chat.build_chat_prompt(body.message, chat.load_chat(chat.CHAT_PATH),
+                                    context, load_history(), config,
+                                    calorie_target_value=target)
+
+    def generate():
+        reply_parts = []
+        try:
+            for piece in chat.stream_reply(prompt):
+                reply_parts.append(piece)
+                yield piece
+        except Exception as exc:
+            msg = ("Sorry, I had trouble reaching Gemini just now "
+                   f"({type(exc).__name__}). Try again in a moment.")
+            reply_parts = [msg]
+            yield msg
+        ts = now.isoformat()
+        turns = chat.load_chat(chat.CHAT_PATH)
+        turns.append({"role": "user", "text": body.message, "ts": ts})
+        turns.append({"role": "coach", "text": "".join(reply_parts), "ts": ts})
+        chat.save_chat(turns, path=chat.CHAT_PATH)
+
+    return StreamingResponse(generate(), media_type="text/plain")
+
+
+@app.post("/chat/clear")
+def chat_clear():
+    chat.save_chat([], path=chat.CHAT_PATH)
+    return {"status": "cleared"}
