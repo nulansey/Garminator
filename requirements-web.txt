@@ -4,4 +4,4 @@ uvicorn
 jinja2
 python-multipart
 python-dotenv
-httpx
+httpx2
