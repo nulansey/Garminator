@@ -8,6 +8,65 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const PLATE_CM = 27; // owner's usual dinner plate diameter
+const BOWL_CM = 15;  // owner's usual bowl diameter
+
+const SYSTEM = `You estimate calories from a photo of a meal. The owner's usual dinner plate is ${PLATE_CM} cm across and their usual bowl is ${BOWL_CM} cm across — use them to judge portion size. Estimate generously rather than low; real portions are usually bigger than they look. Return only the structured JSON.`;
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          estimated_calories: { type: "integer" },
+        },
+        required: ["name", "estimated_calories"],
+        additionalProperties: false,
+      },
+    },
+    total_calories: { type: "integer" },
+  },
+  required: ["items", "total_calories"],
+  additionalProperties: false,
+};
+
+async function estimate(imageB64: string) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
+      system: SYSTEM,
+      output_config: { format: { type: "json_schema", schema: SCHEMA } },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageB64 } },
+            { type: "text", text: "Estimate the calories in this meal." },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    return json({ error: "vision call failed", detail }, 502);
+  }
+  const data = await resp.json();
+  const textBlock = data.content.find((b: { type: string }) => b.type === "text");
+  return json(JSON.parse(textBlock.text));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") {
@@ -18,7 +77,7 @@ Deno.serve(async (req) => {
     if (!image || typeof image !== "string") {
       return json({ error: "missing image" }, 400);
     }
-    return json({ ok: true });
+    return await estimate(image);
   } catch {
     return json({ error: "bad request" }, 400);
   }
