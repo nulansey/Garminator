@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient.js";
 import WeightForm from "../components/WeightForm.jsx";
 import WeightTrendChart from "../components/WeightTrendChart.jsx";
 import MealForm from "../components/MealForm.jsx";
+import PhotoMealForm from "../components/PhotoMealForm.jsx";
 import { intakeDate } from "../lib/intakeDate.js";
 import { dayIntake, sevenDayBalance } from "../lib/balance.js";
 
@@ -118,6 +119,7 @@ export default function Dashboard() {
                 </li>
               </ul>
               <MealForm onSaved={loadMeals} />
+              <PhotoMealForm onSaved={loadMeals} />
               <ul style={{ listStyle: "none", padding: 0 }}>
                 {todayMeals.map((m) => (
                   <li key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
