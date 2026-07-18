@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import WeightForm from "../components/WeightForm.jsx";
 import WeightTrendChart from "../components/WeightTrendChart.jsx";
+import MealForm from "../components/MealForm.jsx";
+import { intakeDate } from "../lib/intakeDate.js";
+import { dayIntake, sevenDayBalance } from "../lib/balance.js";
 
 function hoursMinutes(seconds) {
   if (seconds == null) return "—";
@@ -14,6 +17,7 @@ export default function Dashboard() {
   const [days, setDays] = useState(null); // null = loading, [] = loaded empty
   const [error, setError] = useState(false);
   const [weights, setWeights] = useState(null);
+  const [meals, setMeals] = useState(null);
 
   async function load() {
     setError(false);
@@ -35,9 +39,23 @@ export default function Dashboard() {
     setWeights(data ?? []);
   }
 
+  async function loadMeals() {
+    const { data } = await supabase
+      .from("meals")
+      .select("id, intake_date, name, calories")
+      .order("eaten_at", { ascending: false });
+    setMeals(data ?? []);
+  }
+
+  async function deleteMeal(id) {
+    await supabase.from("meals").delete().eq("id", id);
+    loadMeals();
+  }
+
   useEffect(() => {
     load();
     loadWeights();
+    loadMeals();
   }, []);
 
   if (error)
@@ -72,6 +90,46 @@ export default function Dashboard() {
           </li>
         ))}
       </ul>
+
+      <h2>Today's balance</h2>
+      {meals === null ? (
+        <p>Loading meals…</p>
+      ) : (
+        (() => {
+          const todayBucket = intakeDate();
+          const inToday = dayIntake(meals, todayBucket);
+          const burnToday = today.total_kcal; // may be null - Garmin hasn't synced yet
+          const weekBalance = sevenDayBalance(days, meals, todayBucket);
+          const todayMeals = meals.filter((m) => m.intake_date === todayBucket);
+          return (
+            <div>
+              <ul style={{ listStyle: "none", padding: 0 }}>
+                <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                  <span>Calories in</span><strong>{inToday}</strong>
+                </li>
+                <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                  <span>Calories out (in progress)</span><strong>{burnToday ?? "—"}</strong>
+                </li>
+                <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                  <span>Balance</span><strong>{burnToday == null ? "—" : burnToday - inToday}</strong>
+                </li>
+                <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", color: "#64748b" }}>
+                  <span>7-day balance</span><strong>{weekBalance}</strong>
+                </li>
+              </ul>
+              <MealForm onSaved={loadMeals} />
+              <ul style={{ listStyle: "none", padding: 0 }}>
+                {todayMeals.map((m) => (
+                  <li key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                    <span>{m.name} — {m.calories}</span>
+                    <button onClick={() => deleteMeal(m.id)} style={{ padding: "2px 8px" }}>Delete</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()
+      )}
 
       <h2>Weight</h2>
       <WeightForm onSaved={loadWeights} />

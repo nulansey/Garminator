@@ -29,4 +29,17 @@ describe("sevenDayBalance", () => {
     // (2000-1500) + (2000-1800) = 700
     expect(sevenDayBalance(days, meals, "2026-07-17")).toBe(700);
   });
+
+  it("skips days with unknown burn instead of treating it as 0", () => {
+    const days = [
+      { date: "2026-07-17", total_kcal: null }, // Garmin hasn't synced today yet
+      { date: "2026-07-16", total_kcal: 2000 },
+    ];
+    const meals = [
+      { intake_date: "2026-07-17", calories: 800 }, // would wrongly show -800 if burn defaulted to 0
+      { intake_date: "2026-07-16", calories: 1800 },
+    ];
+    // only 07-16 counts: 2000-1800 = 200
+    expect(sevenDayBalance(days, meals, "2026-07-17")).toBe(200);
+  });
 });

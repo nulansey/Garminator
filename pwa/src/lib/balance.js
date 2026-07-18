@@ -8,14 +8,16 @@ export function dayIntake(meals, date) {
 // Garmin burn is calendar-day; intake is 6am-bucketed. The minor window
 // mismatch is accepted (see spec decision #2).
 export function sevenDayBalance(days, meals, today) {
-  const burnByDate = Object.fromEntries(days.map((d) => [d.date, d.total_kcal ?? 0]));
+  const burnByDate = Object.fromEntries(days.map((d) => [d.date, d.total_kcal]));
   const end = new Date(today + "T00:00:00Z");
   let total = 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date(end);
     d.setUTCDate(d.getUTCDate() - i);
     const iso = d.toISOString().slice(0, 10);
-    total += (burnByDate[iso] ?? 0) - dayIntake(meals, iso);
+    const burn = burnByDate[iso];
+    if (burn == null) continue; // no Garmin burn yet for this day - skip, don't treat as 0
+    total += burn - dayIntake(meals, iso);
   }
   return total;
 }
