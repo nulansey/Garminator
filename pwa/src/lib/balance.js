@@ -1,3 +1,5 @@
+import { isLowLog } from "./lowLog.js";
+
 export function dayIntake(meals, date) {
   return meals
     .filter((m) => m.intake_date === date)
@@ -17,6 +19,7 @@ export function sevenDayBalance(days, meals, today) {
     const iso = d.toISOString().slice(0, 10);
     const burn = burnByDate[iso];
     if (burn == null) continue; // no Garmin burn yet for this day - skip, don't treat as 0
+    if (isLowLog(meals, iso)) continue; // untrustworthy/missing intake log - skip, don't treat as 0
     total += burn - dayIntake(meals, iso);
   }
   return total;

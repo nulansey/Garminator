@@ -22,8 +22,10 @@ describe("sevenDayBalance", () => {
       { date: "2026-07-16", total_kcal: 2000 },
     ];
     const meals = [
-      { intake_date: "2026-07-17", calories: 1500 },
-      { intake_date: "2026-07-16", calories: 1800 },
+      { intake_date: "2026-07-17", calories: 700 },
+      { intake_date: "2026-07-17", calories: 800 },
+      { intake_date: "2026-07-16", calories: 900 },
+      { intake_date: "2026-07-16", calories: 900 },
       { intake_date: "2026-07-01", calories: 9999 }, // outside window, ignored
     ];
     // (2000-1500) + (2000-1800) = 700
@@ -36,9 +38,25 @@ describe("sevenDayBalance", () => {
       { date: "2026-07-16", total_kcal: 2000 },
     ];
     const meals = [
-      { intake_date: "2026-07-17", calories: 800 }, // would wrongly show -800 if burn defaulted to 0
-      { intake_date: "2026-07-16", calories: 1800 },
+      { intake_date: "2026-07-17", calories: 400 }, // would wrongly show -800 if burn defaulted to 0
+      { intake_date: "2026-07-17", calories: 400 },
+      { intake_date: "2026-07-16", calories: 900 },
+      { intake_date: "2026-07-16", calories: 900 },
     ];
+    // only 07-16 counts: 2000-1800 = 200
+    expect(sevenDayBalance(days, meals, "2026-07-17")).toBe(200);
+  });
+
+  it("skips days with an untrustworthy/missing intake log instead of treating it as 0", () => {
+    const days = [
+      { date: "2026-07-17", total_kcal: 2000 }, // meal-logging didn't exist yet this day - no rows
+      { date: "2026-07-16", total_kcal: 2000 },
+    ];
+    const meals = [
+      { intake_date: "2026-07-16", calories: 900 },
+      { intake_date: "2026-07-16", calories: 900 },
+    ];
+    // 07-17 has no logged meals at all - low log, skipped (would wrongly show 2000 if treated as 0 intake)
     // only 07-16 counts: 2000-1800 = 200
     expect(sevenDayBalance(days, meals, "2026-07-17")).toBe(200);
   });
