@@ -1,7 +1,8 @@
 import {
-  ComposedChart, Line, Scatter, ReferenceLine,
+  ComposedChart, Line, Scatter, ReferenceLine, CartesianGrid,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { SERIES_COLORS, chartTheme } from "../styles/chartTheme.js";
 
 const GOAL_WEIGHT = 155;
 
@@ -27,7 +28,7 @@ function withRollingAvg(weights) {
 }
 
 export default function WeightTrendChart({ weights }) {
-  if (!weights || weights.length === 0) return <p>No weight entries yet.</p>;
+  if (!weights || weights.length === 0) return <p style={{ color: "var(--text-secondary)" }}>No weight entries yet.</p>;
   const data = withRollingAvg(weights);
   // Include GOAL_WEIGHT in the range so the reference line is always visible,
   // not just when actual weight happens to be near the goal.
@@ -36,13 +37,14 @@ export default function WeightTrendChart({ weights }) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <ComposedChart data={data}>
-        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-        <YAxis domain={domain} tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <ReferenceLine y={GOAL_WEIGHT} stroke="#16a34a" strokeDasharray="4 4"
-          label={{ value: `Goal ${GOAL_WEIGHT}`, position: "insideTopRight", fontSize: 11 }} />
-        <Scatter dataKey="weight" fill="#cbd5e1" />
-        <Line type="monotone" dataKey="avg" stroke="#0f172a" dot={false} strokeWidth={2} />
+        <CartesianGrid stroke={chartTheme.grid} />
+        <XAxis dataKey="date" tick={{ fontSize: 11, fill: chartTheme.axisTick }} stroke={chartTheme.grid} />
+        <YAxis domain={domain} tick={{ fontSize: 11, fill: chartTheme.axisTick }} stroke={chartTheme.grid} />
+        <Tooltip {...chartTheme.tooltip} />
+        <ReferenceLine y={GOAL_WEIGHT} stroke="var(--accent)" strokeDasharray="4 4"
+          label={{ value: `Goal ${GOAL_WEIGHT}`, position: "insideTopRight", fontSize: 11, fill: chartTheme.axisLabel }} />
+        <Scatter dataKey="weight" fill={SERIES_COLORS.weight} fillOpacity={0.5} />
+        <Line type="monotone" dataKey="avg" stroke={SERIES_COLORS.weight} dot={false} strokeWidth={2} />
       </ComposedChart>
     </ResponsiveContainer>
   );

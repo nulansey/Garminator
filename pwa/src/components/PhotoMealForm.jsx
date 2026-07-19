@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import { intakeDate } from "../lib/intakeDate.js";
 import { resizeImage } from "../lib/resizeImage.js";
+import { input, button, buttonPrimary } from "../styles/ui.js";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/estimate-meal`;
 
@@ -55,23 +56,23 @@ export default function PhotoMealForm({ onSaved }) {
     return (
       <form onSubmit={confirm} style={{ display: "flex", gap: 8, margin: "1rem 0", flexWrap: "wrap" }}>
         <input value={name} onChange={(e) => setName(e.target.value)} required
-          style={{ flex: 2, minWidth: 120, padding: 8 }} />
+          style={{ ...input, flex: 2, minWidth: 120 }} />
         <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} required
-          style={{ flex: 1, minWidth: 90, padding: 8 }} />
-        <button type="submit" style={{ padding: 8 }}>Save</button>
-        <button type="button" onClick={() => setStatus("idle")} style={{ padding: 8 }}>Cancel</button>
+          style={{ ...input, flex: 1, minWidth: 90 }} />
+        <button type="submit" style={buttonPrimary}>Save</button>
+        <button type="button" onClick={() => setStatus("idle")} style={button}>Cancel</button>
       </form>
     );
   }
 
   return (
     <div style={{ margin: "1rem 0" }}>
-      <label style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 4, cursor: "pointer" }}>
+      <label style={{ ...button, display: "inline-block" }}>
         {status === "estimating" ? "Estimating…" : "📷 Photo a meal"}
         <input type="file" accept="image/*" capture="environment" onChange={onPick}
           disabled={status === "estimating"} style={{ display: "none" }} />
       </label>
-      {status === "error" && <span style={{ color: "crimson", marginLeft: 8 }}>Estimate failed</span>}
+      {status === "error" && <span style={{ color: "var(--state-over-fg)", marginLeft: 8 }}>Estimate failed</span>}
     </div>
   );
 }

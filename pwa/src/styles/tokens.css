@@ -1,0 +1,66 @@
+/* Dark-first design tokens. Single source of truth — no hardcoded hex
+   outside this file and chartTheme.js. See
+   docs/superpowers/specs/2026-07-18-dark-theme-design-system.md */
+
+:root {
+  /* Surfaces (OLED true-dark) */
+  --surface-page: #0e1116;
+  --surface-card: #161b22;
+  --surface-raised: #1f2630;
+  --border: #2c3542;
+
+  /* Text */
+  --text-primary: #e8ecf1;
+  --text-secondary: #8b98a9;
+  --text-muted: #5a6472;
+
+  /* Accent / signal */
+  --accent: #00c6a2;
+  --alert: #ff6b4a;
+
+  /* State (tinted-bg + bright-fg pairs — never raw saturated color on
+     the page background) */
+  --state-good-bg: #123528;
+  --state-good-fg: #3fd98a;
+  --state-warn-bg: #3a2410;
+  --state-warn-fg: #ffb84d;
+  --state-over-bg: #3a1618;
+  --state-over-fg: #ff6b7a;
+
+  /* Chart series — one per recurring metric, stable across the app.
+     RHR recolored to the HRV purple to avoid colliding with --alert
+     (see spec decision #4); HRV and RHR never share a chart today. */
+  --series-burn: #00c6a2;
+  --series-weight: #4a9eff;
+  --series-hrv: #b77bff;
+  --series-stress: #ffb84d;
+  --series-rhr: #b77bff;
+  --series-sleep: #5ad1c4;
+  --series-extra: #8ee06b;
+
+  /* Font weights — 400 regular, 500 emphasis. Never 600/700. */
+  --font-weight-regular: 400;
+  --font-weight-emphasis: 500;
+}
+
+/* Base reset — true-dark page background everywhere, not just inside the
+   app's centered column, and only two font weights anywhere in the app. */
+html, body, #root {
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: var(--font-weight-regular);
+}
+
+h1, h2, h3, strong, label {
+  font-weight: var(--font-weight-emphasis);
+}
+
+button {
+  font-family: inherit;
+  font-weight: var(--font-weight-emphasis);
+}

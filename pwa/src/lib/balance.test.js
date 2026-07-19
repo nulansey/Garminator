@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dayIntake, sevenDayBalance } from "./balance.js";
+import { dayIntake, sevenDayBalance, deficitState } from "./balance.js";
 
 describe("dayIntake", () => {
   it("sums calories for the given intake_date only", () => {
@@ -41,5 +41,31 @@ describe("sevenDayBalance", () => {
     ];
     // only 07-16 counts: 2000-1800 = 200
     expect(sevenDayBalance(days, meals, "2026-07-17")).toBe(200);
+  });
+});
+
+describe("deficitState", () => {
+  it("deficit goal: good at/above target, warn short of it, over on any surplus", () => {
+    expect(deficitState(600, "deficit", 500)).toBe("good");
+    expect(deficitState(500, "deficit", 500)).toBe("good");
+    expect(deficitState(200, "deficit", 500)).toBe("warn");
+    expect(deficitState(0, "deficit", 500)).toBe("warn");
+    expect(deficitState(-100, "deficit", 500)).toBe("over");
+  });
+
+  it("maintain goal: good within tolerance, warn within 2x, over beyond", () => {
+    expect(deficitState(50, "maintain", 100)).toBe("good");
+    expect(deficitState(-100, "maintain", 100)).toBe("good");
+    expect(deficitState(150, "maintain", 100)).toBe("warn");
+    expect(deficitState(-200, "maintain", 100)).toBe("warn");
+    expect(deficitState(250, "maintain", 100)).toBe("over");
+  });
+
+  it("surplus goal: good at/beyond target surplus, warn short of it, over on any deficit", () => {
+    expect(deficitState(-600, "surplus", 500)).toBe("good");
+    expect(deficitState(-500, "surplus", 500)).toBe("good");
+    expect(deficitState(-200, "surplus", 500)).toBe("warn");
+    expect(deficitState(0, "surplus", 500)).toBe("warn");
+    expect(deficitState(100, "surplus", 500)).toBe("over");
   });
 });

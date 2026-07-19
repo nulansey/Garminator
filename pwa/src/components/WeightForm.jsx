@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient.js";
+import { input, buttonPrimary } from "../styles/ui.js";
 
 export default function WeightForm({ onSaved }) {
   const [value, setValue] = useState("");
@@ -31,12 +32,12 @@ export default function WeightForm({ onSaved }) {
         placeholder="Weight (lb)"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        style={{ flex: 1, padding: 8 }}
+        style={{ ...input, flex: 1 }}
       />
-      <button type="submit" disabled={saving} style={{ padding: 8 }}>
+      <button type="submit" disabled={saving} style={buttonPrimary}>
         {saving ? "Saving…" : "Log weight"}
       </button>
-      {error && <span style={{ color: "crimson" }}>Save failed</span>}
+      {error && <span style={{ color: "var(--state-over-fg)" }}>Save failed</span>}
     </form>
   );
 }

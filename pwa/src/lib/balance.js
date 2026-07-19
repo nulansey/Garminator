@@ -21,3 +21,24 @@ export function sevenDayBalance(days, meals, today) {
   }
   return total;
 }
+
+// Maps today's balance (burn - intake) against the user's goal to the
+// glanceable good/warn/over state. See spec decision #1 in
+// docs/superpowers/specs/2026-07-18-dark-theme-design-system.md.
+export function deficitState(balance, goalType, goalAmount) {
+  if (goalType === "surplus") {
+    if (balance <= -goalAmount) return "good";
+    if (balance <= 0) return "warn";
+    return "over";
+  }
+  if (goalType === "maintain") {
+    const abs = Math.abs(balance);
+    if (abs <= goalAmount) return "good";
+    if (abs <= goalAmount * 2) return "warn";
+    return "over";
+  }
+  // deficit (default)
+  if (balance >= goalAmount) return "good";
+  if (balance >= 0) return "warn";
+  return "over";
+}

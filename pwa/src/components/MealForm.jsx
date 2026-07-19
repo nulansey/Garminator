@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import { intakeDate } from "../lib/intakeDate.js";
+import { input, buttonPrimary } from "../styles/ui.js";
 
 export default function MealForm({ onSaved }) {
   const [name, setName] = useState("");
@@ -37,7 +38,7 @@ export default function MealForm({ onSaved }) {
         placeholder="Meal"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        style={{ flex: 2, minWidth: 120, padding: 8 }}
+        style={{ ...input, flex: 2, minWidth: 120 }}
       />
       <input
         type="number"
@@ -45,12 +46,12 @@ export default function MealForm({ onSaved }) {
         placeholder="Calories"
         value={calories}
         onChange={(e) => setCalories(e.target.value)}
-        style={{ flex: 1, minWidth: 90, padding: 8 }}
+        style={{ ...input, flex: 1, minWidth: 90 }}
       />
-      <button type="submit" disabled={saving} style={{ padding: 8 }}>
+      <button type="submit" disabled={saving} style={buttonPrimary}>
         {saving ? "Saving…" : "Log meal"}
       </button>
-      {error && <span style={{ color: "crimson" }}>Save failed</span>}
+      {error && <span style={{ color: "var(--state-over-fg)" }}>Save failed</span>}
     </form>
   );
 }

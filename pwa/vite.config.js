@@ -11,8 +11,8 @@ export default defineConfig({
         name: "Garmin Calorie Tracker",
         short_name: "Calories",
         description: "Weight and calorie tracking on top of Garmin data",
-        theme_color: "#0f172a",
-        background_color: "#0f172a",
+        theme_color: "#0e1116",
+        background_color: "#0e1116",
         display: "standalone",
         start_url: "/",
         icons: [

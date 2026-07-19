@@ -5,9 +5,10 @@ import WeightTrendChart from "../components/WeightTrendChart.jsx";
 import MealForm from "../components/MealForm.jsx";
 import PhotoMealForm from "../components/PhotoMealForm.jsx";
 import { intakeDate } from "../lib/intakeDate.js";
-import { dayIntake, sevenDayBalance } from "../lib/balance.js";
+import { dayIntake, sevenDayBalance, deficitState } from "../lib/balance.js";
 import { calibrationFactor } from "../lib/calibration.js";
 import { isLowLog } from "../lib/lowLog.js";
+import { card, badge, textSecondary, textMuted } from "../styles/ui.js";
 
 function hoursMinutes(seconds) {
   if (seconds == null) return "—";
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [error, setError] = useState(false);
   const [weights, setWeights] = useState(null);
   const [meals, setMeals] = useState(null);
+  const [goal, setGoal] = useState(null);
 
   async function load() {
     setError(false);
@@ -55,10 +57,20 @@ export default function Dashboard() {
     loadMeals();
   }
 
+  async function loadGoal() {
+    const { data } = await supabase
+      .from("settings")
+      .select("goal_type, goal_amount")
+      .eq("id", 1)
+      .single();
+    setGoal(data ?? null);
+  }
+
   useEffect(() => {
     load();
     loadWeights();
     loadMeals();
+    loadGoal();
   }, []);
 
   if (error)
@@ -88,47 +100,52 @@ export default function Dashboard() {
       <ul style={{ listStyle: "none", padding: 0 }}>
         {stats.map(([label, value]) => (
           <li key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-            <span>{label}</span>
+            <span style={textSecondary}>{label}</span>
             <strong>{value}</strong>
           </li>
         ))}
       </ul>
 
-      <h2>Today's balance</h2>
-      {meals === null ? (
-        <p>Loading meals…</p>
+      {meals === null || goal === null ? (
+        <p style={textSecondary}>Loading meals…</p>
       ) : (
         (() => {
           const todayBucket = intakeDate();
           const inToday = dayIntake(meals, todayBucket);
           const burnToday = today.total_kcal; // may be null - Garmin hasn't synced yet
+          const balanceToday = burnToday == null ? null : burnToday - inToday;
+          const state = balanceToday == null ? null : deficitState(balanceToday, goal.goal_type, goal.goal_amount);
           const weekBalance = sevenDayBalance(days, meals, todayBucket);
           const todayMeals = meals.filter((m) => m.intake_date === todayBucket);
           return (
             <div>
+              <div style={{ ...card, ...(state ? badge[state] : {}), margin: "8px 0 16px", padding: 16 }}>
+                <div style={{ ...textSecondary, fontSize: 13 }}>
+                  Today's balance{isLowLog(meals, todayBucket) ? " — low log, not reliable" : ""}
+                </div>
+                <div style={{ fontSize: 32, fontWeight: "var(--font-weight-emphasis)" }}>
+                  {balanceToday == null ? "—" : balanceToday}
+                </div>
+              </div>
               <ul style={{ listStyle: "none", padding: 0 }}>
                 <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span>Calories in</span><strong>{inToday}</strong>
+                  <span style={textSecondary}>Calories in</span><strong>{inToday}</strong>
                 </li>
                 <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span>Calories out (in progress)</span><strong>{burnToday ?? "—"}</strong>
+                  <span style={textSecondary}>Calories out (in progress)</span><strong>{burnToday ?? "—"}</strong>
                 </li>
                 <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span>Balance{isLowLog(meals, todayBucket) ? " ⚠️ (low log — not reliable)" : ""}</span>
-                  <strong>{burnToday == null ? "—" : burnToday - inToday}</strong>
-                </li>
-                <li style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", color: "#64748b" }}>
-                  <span>7-day balance</span><strong>{weekBalance}</strong>
+                  <span style={textMuted}>7-day balance</span><strong style={textMuted}>{weekBalance}</strong>
                 </li>
               </ul>
               {(() => {
                 const cal = calibrationFactor({
                   days, meals, weights: weights ?? [], endDate: todayBucket,
                 });
-                if (!cal) return <p style={{ color: "#64748b" }}>Calibration: need ~3 weeks of logs and weigh-ins.</p>;
+                if (!cal) return <p style={textMuted}>Calibration: need ~3 weeks of logs and weigh-ins.</p>;
                 const pct = Math.round((cal.factor - 1) * 100);
                 return (
-                  <p style={{ color: "#64748b" }}>
+                  <p style={textMuted}>
                     Calibration ({cal.usableDays} usable days): scale shows {cal.actualLb.toFixed(1)} lb vs {cal.predictedLb.toFixed(1)} lb predicted.
                     {pct > 0
                       ? ` You likely eat ~${pct}% more than you log.`
@@ -142,7 +159,7 @@ export default function Dashboard() {
                 {todayMeals.map((m) => (
                   <li key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
                     <span>{m.name} — {m.calories}</span>
-                    <button onClick={() => deleteMeal(m.id)} style={{ padding: "2px 8px" }}>Delete</button>
+                    <button onClick={() => deleteMeal(m.id)} style={{ ...card, padding: "2px 8px", cursor: "pointer" }}>Delete</button>
                   </li>
                 ))}
               </ul>
@@ -153,7 +170,7 @@ export default function Dashboard() {
 
       <h2>Weight</h2>
       <WeightForm onSaved={loadWeights} />
-      {weights === null ? <p>Loading weight…</p> : <WeightTrendChart weights={weights} />}
+      {weights === null ? <p style={textSecondary}>Loading weight…</p> : <WeightTrendChart weights={weights} />}
     </section>
   );
 }
