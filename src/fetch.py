@@ -9,12 +9,27 @@ import argparse
 import datetime
 import os
 from datetime import date, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
+import yaml
 from supabase import create_client
 
 from src import garmin
 
 BACKFILL_DAYS = 90
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
+
+
+def local_today():
+    """Today in the configured timezone, not the runner's (UTC on Actions).
+
+    UTC 'today' is a day ahead of Hawaii every afternoon, which used to
+    upsert an all-null row for a day that hadn't started yet.
+    """
+    with open(CONFIG_PATH) as f:
+        tz = yaml.safe_load(f)["timezone"]
+    return datetime.datetime.now(ZoneInfo(tz)).date()
 
 # garmin.fetch_day() record key -> daily_metrics column name.
 FIELD_MAP = {
@@ -107,7 +122,7 @@ def main():
                         help="how far back to go when the table is empty")
     args = parser.parse_args()
 
-    today = datetime.date.today()
+    today = local_today()
     client = get_client()
     days = days_to_fetch(newest_date(client), today, args.backfill_days)
     print(f"Fetching {len(days)} day(s): {days[0]} .. {days[-1]}")
