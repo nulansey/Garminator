@@ -107,8 +107,6 @@ export default function Dashboard() {
     ["Calories out", burnToday ?? "—"],
     ["Steps", today.steps ?? "—"],
     ["Resting HR", today.resting_hr ?? "—"],
-    ["HRV", today.hrv_last_night_avg == null ? "—"
-      : `${today.hrv_last_night_avg}${today.hrv_status ? ` (${today.hrv_status.toLowerCase()})` : ""}`],
     ["Avg stress", today.avg_stress ?? "—"],
     ["Sleep", hoursMinutes(today.sleep_seconds)],
     ["Sleep score", today.sleep_score ?? "—"],
