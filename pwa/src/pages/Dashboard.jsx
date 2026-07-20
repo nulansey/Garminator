@@ -36,6 +36,16 @@ function small(text) {
   return <span style={{ fontSize: 14 }}>{text}</span>;
 }
 
+// "3m ago" / "2h ago" / "5d ago" from an ISO timestamp.
+function timeAgo(iso) {
+  if (!iso) return null;
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 48 * 60) return `${Math.round(mins / 60)}h ago`;
+  return `${Math.round(mins / 1440)}d ago`;
+}
+
 function StatTile({ label, value }) {
   return (
     <div style={{ ...card, padding: 12 }}>
@@ -157,7 +167,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h2>Today ({today.date})</h2>
+      <h2>
+        Today ({today.date})
+        {today.updated_at && (
+          <span style={{ ...textMuted, fontSize: 13, fontWeight: "normal", marginLeft: 8 }}>
+            fetched {timeAgo(today.updated_at)}
+          </span>
+        )}
+      </h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, marginBottom: 16 }}>
         {tiles.map(([label, value]) => (
           <StatTile key={label} label={label} value={value} />
