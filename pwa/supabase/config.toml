@@ -1,0 +1,21 @@
+# Pushed with `supabase config push` (applies immediately in non-interactive
+# runs). CAUTION: within a declared section, undeclared keys are reset to CLI
+# defaults - declare every key whose remote value differs from the default.
+project_id = "Garminator"
+
+[auth]
+site_url = "https://nulansey.github.io/Garminator/"
+additional_redirect_urls = [
+  "http://localhost:5173",
+  "https://nulansey.github.io/Garminator/",
+]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
