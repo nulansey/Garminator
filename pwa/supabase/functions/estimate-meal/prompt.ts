@@ -34,3 +34,94 @@ export function mealPrompt(name: unknown): string {
     "size, then estimate the calories for that food at that portion.",
   ].join("\n");
 }
+
+// Owner's usual crockery, used as the scale reference in photos.
+export const PLATE_CM = 27;
+export const BOWL_CM = 15;
+
+/**
+ * Calorie density reference, kcal per 100 g of the food as eaten.
+ *
+ * Deliberately weighted toward fats, oils, and dense starches: those dominate
+ * estimation error. A tablespoon of oil is ~120 kcal and nearly invisible in a
+ * photo, while precision on broccoli cannot move a daily total. This is a
+ * reference, not a whitelist - foods absent from it are estimated from the
+ * model's own knowledge, as they were before this table existed.
+ *
+ * Generic on purpose: there is not yet enough logging history to tailor it.
+ * Extending it is a one-line edit.
+ */
+export const DENSITIES: { name: string; kcal100g: number }[] = [
+  // Fats and oils - the largest error source
+  { name: "olive oil", kcal100g: 884 },
+  { name: "butter", kcal100g: 717 },
+  { name: "mayonnaise", kcal100g: 680 },
+  { name: "peanut butter", kcal100g: 588 },
+  { name: "almonds", kcal100g: 579 },
+  { name: "cheddar cheese", kcal100g: 403 },
+  { name: "avocado", kcal100g: 160 },
+  // Dense starches
+  { name: "white rice", kcal100g: 130 },
+  { name: "brown rice", kcal100g: 123 },
+  { name: "pasta", kcal100g: 131 },
+  { name: "bread", kcal100g: 265 },
+  { name: "tortilla", kcal100g: 310 },
+  { name: "potato", kcal100g: 87 },
+  { name: "sweet potato", kcal100g: 90 },
+  { name: "french fries", kcal100g: 312 },
+  { name: "tortilla chips", kcal100g: 489 },
+  { name: "oats", kcal100g: 389 },
+  // Proteins - cut matters, so name several
+  { name: "chicken breast", kcal100g: 165 },
+  { name: "chicken thigh", kcal100g: 209 },
+  { name: "ground beef", kcal100g: 250 },
+  { name: "steak", kcal100g: 271 },
+  { name: "pork chop", kcal100g: 231 },
+  { name: "bacon", kcal100g: 541 },
+  { name: "sausage", kcal100g: 301 },
+  { name: "lamb", kcal100g: 294 },
+  { name: "salmon", kcal100g: 208 },
+  { name: "white fish", kcal100g: 96 },
+  { name: "shrimp", kcal100g: 99 },
+  { name: "egg", kcal100g: 143 },
+  { name: "tofu", kcal100g: 76 },
+  // Low-density, low-stakes - a handful only
+  { name: "broccoli", kcal100g: 34 },
+  { name: "mixed salad greens", kcal100g: 17 },
+  { name: "corn", kcal100g: 86 },
+  { name: "banana", kcal100g: 89 },
+  { name: "apple", kcal100g: 52 },
+  { name: "beer", kcal100g: 43 },
+];
+
+/**
+ * The system prompt for every meal estimate.
+ *
+ * Lives here rather than in index.ts so it is covered by tests. The density
+ * table gives the model a fixed number to multiply against instead of
+ * recalling a total from impression, and the three-step method forces it to
+ * commit to a portion size before it can produce a calorie figure - which is
+ * what makes the per-item reasoning field an accuracy feature rather than a
+ * display one.
+ */
+export function systemPrompt(): string {
+  const table = DENSITIES.map((d) => `- ${d.name}: ${d.kcal100g} kcal per 100 g`).join("\n");
+  return [
+    "You estimate calories from a photo of a meal.",
+    "",
+    `The owner's usual dinner plate is ${PLATE_CM} cm across and their usual bowl is ${BOWL_CM} cm across - use them to judge portion size.`,
+    "Estimate generously rather than low; real portions are usually bigger than they look.",
+    "",
+    "For each food, work in three steps:",
+    "1. Identify the food.",
+    "2. Estimate its portion in grams, using the plate and bowl above for scale.",
+    "3. Multiply that weight by the calorie density below to get its calories.",
+    "",
+    "State the result of steps 2 and 3 in that item's `reasoning` field, briefly - for example \"~150 g, about a deck of cards\".",
+    "",
+    "Calorie density reference (use your own knowledge for foods not listed):",
+    table,
+    "",
+    "Return only the structured JSON.",
+  ].join("\n");
+}
