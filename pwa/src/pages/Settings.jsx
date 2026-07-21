@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import { settingsErrors } from "../lib/settingsValidation.js";
+import SetPassword from "./SetPassword.jsx";
 import { input, button, buttonPrimary, textSecondary } from "../styles/ui.js";
 
 const SLOT_NAMES = ["morning", "midday", "evening"];
@@ -81,6 +82,7 @@ export default function Settings({ onDone }) {
         {status === "saved" && <span style={{ color: "var(--state-good-fg)", marginLeft: 8 }}>Saved</span>}
         {status === "error" && <span style={{ color: "var(--state-over-fg)", marginLeft: 8 }}>Save failed</span>}
       </form>
+      <SetPassword />
     </div>
   );
 }

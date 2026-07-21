@@ -2,9 +2,13 @@ import { useState } from "react";
 import { supabase } from "../supabaseClient.js";
 import { input, buttonPrimary, button, textSecondary } from "../styles/ui.js";
 
-// Shown when a reset/recovery link is opened (App detects PASSWORD_RECOVERY).
-// The recovery grant is already an authenticated session, so updateUser can
-// set the password directly.
+// Sets a password on the current session via updateUser. Used in two places:
+// App's recovery screen (when it catches PASSWORD_RECOVERY), and Settings.
+// The Settings copy is the reliable path - PASSWORD_RECOVERY fires from a
+// setTimeout scheduled at client construction, so App's listener can miss it
+// and drop you on the dashboard with a recovery session and no way to set a
+// password. Any signed-in session can set one from Settings instead.
+// onDone is optional; without it the "Continue" link is omitted.
 export default function SetPassword({ onDone }) {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState(null); // null | "error" | "saved"
@@ -33,10 +37,12 @@ export default function SetPassword({ onDone }) {
       {status === "saved" && (
         <p style={textSecondary}>
           Password saved.{" "}
-          <button type="button" onClick={onDone}
-            style={{ ...button, background: "none", border: "none", color: "var(--accent)", padding: 0 }}>
-            Continue
-          </button>
+          {onDone && (
+            <button type="button" onClick={onDone}
+              style={{ ...button, background: "none", border: "none", color: "var(--accent)", padding: 0 }}>
+              Continue
+            </button>
+          )}
         </p>
       )}
       {status === "error" && <p style={{ color: "var(--state-over-fg)" }}>Couldn’t save — try again.</p>}
