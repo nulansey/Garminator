@@ -99,9 +99,9 @@ whitespace-only names are treated as absent; a name over 200 characters is
 truncated. Run with the existing `npx vitest run` from `pwa/`.
 
 Vitest's default `include` glob reaches outside `src/`, so these tests are
-picked up without config changes. Confirm this on the first run — if the glob
-does not reach `supabase/`, add the path to `vitest.config` rather than moving
-the helper away from the function it serves.
+picked up without config changes. Verified on 2026-07-20 with a throwaway test
+at that exact path: vitest collected it and ran it. There is no
+`vitest.config` in `pwa/`, so the defaults apply.
 
 Manual check, since the vision call cannot be asserted on: photograph a meal,
 change the name to something clearly different ("salad" → "cheeseburger"), tap
