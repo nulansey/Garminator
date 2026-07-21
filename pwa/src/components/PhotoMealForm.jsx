@@ -3,26 +3,9 @@ import { supabase } from "../supabaseClient.js";
 import { intakeDate } from "../lib/intakeDate.js";
 import { resizeImage } from "../lib/resizeImage.js";
 import { itemsTotal, itemsForSave, hasIncompleteItem } from "../lib/mealItems.js";
+import { callEstimate } from "../lib/estimateMeal.js";
 import MealItemsEditor from "./MealItemsEditor.jsx";
 import { input, button, buttonPrimary, textSecondary } from "../styles/ui.js";
-
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/estimate-meal`;
-
-// One call for both paths. `body` is either {image} for a first estimate or
-// {image, items, itemIndex} to re-price a single item. Throws on non-OK.
-async function callEstimate(body) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const resp = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) throw new Error("estimate failed");
-  return await resp.json();
-}
 
 export default function PhotoMealForm({ onSaved }) {
   // idle | estimating | confirm | error
