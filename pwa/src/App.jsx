@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./supabaseClient.js";
+import { supabase, startedInRecovery } from "./supabaseClient.js";
 import Login from "./pages/Login.jsx";
 import SetPassword from "./pages/SetPassword.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -9,7 +9,9 @@ import { button, textSecondary } from "./styles/ui.js";
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [recovery, setRecovery] = useState(false);
+  // Seeded from the URL because the PASSWORD_RECOVERY event below can fire
+  // before this component subscribes. The listener stays as a second path.
+  const [recovery, setRecovery] = useState(startedInRecovery);
   const [view, setView] = useState("dashboard");
 
   useEffect(() => {
