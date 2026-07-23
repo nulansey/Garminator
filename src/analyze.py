@@ -4,7 +4,13 @@ import json
 from google import genai
 from google.genai import types
 
-MODEL = "gemini-flash-latest"
+# Pinned, not the floating "-latest" alias: on 2026-07-21 that alias moved from
+# Gemini 2.5 to 3.x Flash, which swapped thinking_budget (token count) for
+# thinking_level (semantic) and 400'd every request below. Pin to 2.5 so
+# thinking_budget=0 stays valid.
+# ponytail: 2.5-flash retires ~2026-10-16. Before then, move to a 3.x flash
+# model AND change the thinking_config below to thinking_level, together.
+MODEL = "gemini-2.5-flash"
 
 SLOT_GUIDANCE = {
     "morning": (
